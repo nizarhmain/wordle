@@ -1,5 +1,5 @@
 import "./App.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import confetti from "canvas-confetti";
 
 function App() {
@@ -26,6 +26,20 @@ function Main({ wordToGuess }: { wordToGuess: string }) {
   const [userInput, setUserInput] = useState("");
   const [guesses, setGuesses] = useState<string[]>(Array(5).fill(""));
   const [currentGuessIndex, setCurrentGuessIndex] = useState(0);
+
+  const check = useCallback(() => {
+    if (userInput === wordToGuess) {
+      confetti();
+    }
+
+    if (userInput.length === 5 && currentGuessIndex < 5) {
+      const newGuesses = [...guesses];
+      newGuesses[currentGuessIndex] = userInput;
+      setGuesses(newGuesses);
+      setCurrentGuessIndex(currentGuessIndex + 1);
+      setUserInput("");
+    }
+  }, [currentGuessIndex, guesses, userInput, wordToGuess]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,35 +68,18 @@ function Main({ wordToGuess }: { wordToGuess: string }) {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [userInput]);
+  }, [check, userInput]);
 
-  function check() {
-    if (userInput === wordToGuess) {
-      confetti();
-    }
-
-    if (userInput.length === 5 && currentGuessIndex < 5) {
-      const newGuesses = [...guesses];
-      newGuesses[currentGuessIndex] = userInput;
-      setGuesses(newGuesses);
-      setCurrentGuessIndex(currentGuessIndex + 1);
-      setUserInput("");
-    }
-  }
-
-  function getLetterColor(
-    letter: string,
-    index: number,
-    rowIndex: number,
-  ): string {
-    if (rowIndex >= currentGuessIndex) return "transparent";
+  function getColors(letter: string, index: number, rowIndex: number) {
+    if (rowIndex >= currentGuessIndex)
+      return { backgroundColor: "transparent", color: "white" };
 
     if (letter === wordToGuess[index]) {
-      return "green";
+      return { backgroundColor: "green", color: "white" };
     } else if (wordToGuess.includes(letter)) {
-      return "yellow";
+      return { backgroundColor: "yellow", color: "black" };
     } else {
-      return "gray";
+      return { backgroundColor: "gray", color: "white" };
     }
   }
 
@@ -109,7 +106,7 @@ function Main({ wordToGuess }: { wordToGuess: string }) {
                   ? userInput[colIndex] ?? ""
                   : guesses[rowIndex][colIndex] ?? "";
 
-              const backgroundColor = getLetterColor(
+              const { backgroundColor, color } = getColors(
                 letter,
                 colIndex,
                 rowIndex,
@@ -126,6 +123,7 @@ function Main({ wordToGuess }: { wordToGuess: string }) {
                     justifyContent: "center",
                     alignItems: "center",
                     backgroundColor,
+                    color,
                   }}
                 >
                   <h2 style={{ margin: 0 }}>{letter}</h2>
